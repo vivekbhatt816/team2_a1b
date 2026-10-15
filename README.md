@@ -12,7 +12,7 @@
 | Field | Value |
 | :--- | :--- |
 | **GitHub Repo URL** | `https://github.com/vivekbhatt816/team2_a1b`  |
-| **Final Commit Hash** | `git rev-parse HEAD`  |
+| **Final Commit Hash** | `53b5ac064d171c216f8c98545b6851286a60d65b`  |
 | **Demo Video (≤ 5 min)** | `docs/demo_video` |
 
 ---
