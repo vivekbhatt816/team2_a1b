@@ -1,180 +1,301 @@
-# BiteStream — Food Delivery & Real-Time Logistics
+# BiteStream – Assignment 2 (Front End Design)
 
-CS6.302 Software System Development · Assignment 1 · **Project 1**
-PostgreSQL + MongoDB, implemented entirely at the database level.
+**Course:** CS6.302 – Software System Development  
+**Team:** Team 2 (Assignment 1B)  
+**Project:** P1 – BiteStream (food delivery: PostgreSQL + MongoDB)  
+**Inherited from:** Assignment 1 Team 5 – [team5_a1](https://github.com/adimitt/team5_a1)  
 
-## 1. Submission
+---
 
-| | |
-|---|---|
-| **Team** | 5 |
-| **Project** | 1 — BiteStream
-| **Members** | Aditya Mittal (2026201055) · Sourav Sahu (2026202001) · Dasari Abhaya Manasa (2026202014) · Gagandeep Singh (2026202008) |
-| **Repository** | https://github.com/adimitt/team5_a1 |
-| **Final commit** | `3f498f9836925db3467fb2949cc39961ae755a90` |
+## Metadata & Links
 
-## 2. Environment
+| Field | Value |
+| :--- | :--- |
+| **GitHub Repo URL** | `https://github.com/vivekbhatt816/team2_a1b`  |
+| **Final Commit Hash** | `git rev-parse HEAD`  |
+| **Demo Video (≤ 5 min)** | `docs/demo_video` |
 
-PostgreSQL 17.11 · MongoDB 8.3.7 · Python 3.13
+---
 
+## 1. Team Members & Contributions
+
+| # | Name |
+| :-: | :--- |
+| 1 | Thejas Gowda |
+| 2 | Vivek Bhatt |
+| 3 | SreeLasya Muvva |
+| 4 | Charmin Parmar |
+
+### Contribution Breakdown
+
+| Team Member | Design Contributions | Code Contributions | Verification / Integration |
+| :--- | :--- | :--- | :--- |
+| **Thejas Gowda** | Designed UI wireframes for screen layouts; contributed to interaction decisions. | Implemented backend integration and specific API feature routes. | Tested core workflows and resolved integration issues. |
+
+| **Charmin Parmar** | Reviewed and refined wireframes; contributed to UI layout & responsive design. | Implemented `api/server.js` and integrated API endpoints with frontend. | Verified API responses, error handling, and application startup. |
+
+| **SreeLasya Muvva** | Created wireframes for all 7 screens & UI preview; designed navigation layout. | Contributed `api/routes/audit.js`, `analytics.js`, `browse.js`, and `transactions.js`. | Checked route files and documented inherited system & design decisions. |
+
+| **Vivek Bhatt** | Contributed to screen design, visual consistency, and UI workflow review. | Implemented frontend in `web/app.js`, `web/index.html`, and `web/styles.css`. | Tested UI workflows, captured screenshots, and verified final integration. |
+
+#### Shared Responsibilities
+* All members participated in reviewing UI design and discussing workflow usability.
+* All members contributed code to their assigned implementation tasks.
+* Team members reviewed integration and tested relevant workflows before submission.
+* Contributions are recorded according to actual work completed by each member.
+
+---
+
+## 2. System Overview
+
+**BiteStream** is a full-stack food delivery platform. 
+* **Assignment 1** established the data layer using **PostgreSQL** (for transactions and analytics) and **MongoDB** (for flexible menus and geospatial tracking).
+* **Assignment 2** introduces a browser-based front end and a unified API layer so that all core workflows can be executed seamlessly without running manual database scripts.
+
+The databases perform the core logic (stored procedures, triggers, partial unique indexes, window functions, materialized views, and aggregation pipelines), while the API layer handles pass-through requests and JSON formatting.
+
+### Core Workflows
+
+| # | Workflow | Location / DB Object | UI Screen |
+| :-: | :--- | :--- | :--- |
+| **1** | **Place an order:** wallet debit, order creation, audit trigger, active order guard | `sp_execute_checkout`, `trg_wallet_audit`, `idx_active_user_order` | Checkout, Wallet Audit |
+| **2** | **Revenue analytics:** 7-day moving average, `DENSE_RANK()`, materialized view | `sql/06_window_analytics.sql`, `mv_restaurant_performance` | Analytics |
+| **3** | **Nearest active drivers:** drivers within 5 km | MongoDB `$geoNear` on `DriverPings` (`mongo/02_workflow3_geonear.js`) | Live Driver Map |
+| **4** | **Review analytics & menus:** flexible menu documents and aggregated reviews | MongoDB `$facet` on `Reviews`, `Menus` collection | Reviews, Browse |
+
+---
+
+## 3. Users & Key Goals
+
+| User Persona | Primary Goals & Capabilities |
+| :--- | :--- |
+| **Customer** | Select a restaurant, order using wallet balance, track balance changes, view wallet ledger entries, and check real-time order status. |
+| **Restaurant Manager / Ops** | Monitor revenue trends & rankings, refresh performance metrics, observe nearby driver density, and inspect reviews/menu catalogs. |
+
+*Wireframes for all 7 screens are available in SVG format under `docs/design/wireframes/`. A UI preview screenshot is located at `docs/design/ui-preview.png`.*
+
+---
+
+## 4. Tech Stack & Architecture Justification
+
+| Layer | Technology | Selection Rationale |
+| :--- | :--- | :--- |
+| **Relational DB** | **PostgreSQL** | Inherited from A1. Supports ACID transactions, stored procedures, audit triggers, partial unique indexes, window functions, and materialized views. |
+| **Document DB** | **MongoDB** | Inherited from A1. Features `2dsphere` indexes with `$geoNear`, `$facet` aggregation pipelines, flexible nested menu schemas, and TTL indexing for pings. |
+| **API Layer** | **Node.js + Express** (ES Modules) | Lightweight, single-process server for serving both API routes (`pg`, `mongodb`) and static web assets without complex infrastructure. |
+| **Frontend** | **Vanilla HTML5 / CSS3 / JS** (`web/`) | Zero-build setup; highly performant, accessible, and straightforward to run and debug across all 7 screens. |
+| **Data Visualization** | **Chart.js 4.4.7** (CDN) | Clean, responsive line, bar, and doughnut charts for revenue analytics and review sentiment. |
+| **Geospatial Mapping**| **Leaflet 1.9.4 + OpenStreetMap** | Open-source, lightweight interactive driver tracking map requiring no API keys. |
+| **Data Generation** | **Python 3** (`psycopg3`, `pymongo`, `Faker`) | Reproducible database seeders with fixed random seed (`42`). |
+
+---
+
+## 5. Repository Structure
+
+```text
+bitestream/
+├── README.md
+├── docs/
+│   ├── handover_note.md          # Handover details & system modification notes
+│   ├── api_endpoints.md          # Complete API documentation
+│   ├── design/
+│   │   ├── wireframes/           # 7 SVG wireframe diagrams
+│   │   └── ui-preview.png
+│   ├── screenshots/              # Application screenshots
+│   ├── relational_erd.png        # ER diagram (PostgreSQL)
+│   └── mongo_schema_map.json     # MongoDB schema & index definitions
+├── sql/                          # Schema DDL, indexes, triggers, stored procedures, materialized views, window queries
+├── mongo/                        # Mongo scripts: collections, indexes, $geoNear, $facet
+├── data_generation/              # Seeders: postgres_seeder.py, mongo_seeder.py, requirements.txt
+├── performance/                  # EXPLAIN ANALYZE logs & Mongo executionStats
+├── api/                          # Express API application
+│   ├── server.js
+│   ├── db/                       # Postgres & MongoDB connection setups
+│   └── routes/                   # Endpoint handlers (browse, transactions, audit, analytics, mongo)
+└── web/                          # Frontend assets (index.html, app.js, styles.css)
+```
+
+---
+
+## 6. Setup and Installation Guide
+
+### Prerequisites
+* **PostgreSQL 14+** (with `psql` in system `PATH`)
+* **MongoDB 6+** (with `mongosh`)
+* **Node.js 18+** & `npm`
+* **Python 3.10+** & `pip`
+
+---
+
+### Step 0: Environment Configuration (Optional)
+Default connection parameters work if configured with default user credentials. Set environment variables if needed:
+
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `PGHOST` | `127.0.0.1` | PostgreSQL Host |
+| `PGPORT` | `5432` | PostgreSQL Port |
+| `PGDATABASE` | `bitestream` | Database Name |
+| `PGUSER` | `bs` | PostgreSQL User |
+| `PGPASSWORD` | `bs` | PostgreSQL Password |
+| `MONGO_URI` | `mongodb://127.0.0.1:27017` | MongoDB Connection URI |
+| `MONGO_DB` | `bitestream` | MongoDB Database Name |
+| `PORT` | `5000` | API & Web Server Port |
+
+---
+
+### Step 1: Create Database & User
+Run the following commands in PostgreSQL:
 ```bash
-psql -d postgres -c "CREATE ROLE bs LOGIN PASSWORD 'bs' CREATEDB;"
-psql -d postgres -c "CREATE DATABASE bitestream OWNER bs;"
+psql -U postgres -c "CREATE USER bs WITH PASSWORD 'bs' CREATEDB;"
+psql -U postgres -c "CREATE DATABASE bitestream OWNER bs;"
+```
+
+---
+
+### Step 2: Install Python Seeder Dependencies
+```bash
 python3 -m pip install -r data_generation/requirements.txt
-export PGHOST=127.0.0.1 PGPORT=5432 PGDATABASE=bitestream PGUSER=bs PGPASSWORD=bs
-export MONGO_URI=mongodb://127.0.0.1:27017
 ```
 
-## 3. Setup — run in this order
+---
+
+### Step 3: Build & Seed PostgreSQL Database
+*Run all commands from the repository root directory in sequence:*
 
 ```bash
-psql -f sql/01_schema_ddl.sql              # tables, PK/FK, CHECK constraints
-psql -f sql/03_triggers_and_audit.sql      # audit trigger — BEFORE any data exists
-psql -f sql/04_stored_procedures.sql       # Workflow 1
-python3 data_generation/postgres_seeder.py # COPY + trigger-driven ledger + VACUUM ANALYZE
-psql -f sql/02_indexes.sql                 # indexes — AFTER the bulk load
-psql -f sql/05_materialized_views.sql      # MV + refresh function and procedure
+# 1. Apply Schema DDL
+psql -U bs -d bitestream -f sql/01_schema_ddl.sql
 
+# 2. Add Triggers, Audit Guards, and Stored Procedures
+psql -U bs -d bitestream -f sql/03_triggers_and_audit.sql
+psql -U bs -d bitestream -f sql/04_stored_procedures.sql
+
+# 3. Seed Relational Data (~50k users, ~1k restaurants, ~300k orders)
+python3 data_generation/postgres_seeder.py
+# Note: For a quick test run, use: python3 data_generation/postgres_seeder.py --scale 0.05
+
+# 4. Build Indexes AFTER Seeding (prevents partial unique index conflicts during bulk load)
+psql -U bs -d bitestream -f sql/02_indexes.sql
+
+# 5. Build Materialized Views
+psql -U bs -d bitestream -f sql/05_materialized_views.sql
+```
+*(Optional: Run analytics queries directly via `psql -U bs -d bitestream -f sql/06_window_analytics.sql`)*
+
+---
+
+### Step 4: Build & Seed MongoDB Database
+*PostgreSQL must be seeded prior to MongoDB seed execution to map restaurant IDs and coordinates.*
+
+```bash
+# 1. Setup Mongo Collections, Schema Validation & Indexes
 mongosh bitestream mongo/01_collections_and_indexes.js
+
+# 2. Seed Document Data (~1k menus, ~200k reviews, ~500k+ driver pings)
 python3 data_generation/mongo_seeder.py
-
-psql -f sql/06_window_analytics.sql                # Workflow 2
-mongosh bitestream mongo/02_workflow3_geonear.js   # Workflow 3
-mongosh bitestream mongo/03_workflow4_facet.js     # Workflow 4
-psql -c "CALL sp_execute_checkout(1, 1, 250.00, NULL, NULL);"   # Workflow 1
+# Note: For a quick test run, use: python3 data_generation/mongo_seeder.py --scale 0.05
 ```
 
-**The order is not optional.**
-`03` before any data, so every ledger row is trigger-written.
-`02` after the seeder — loading into six indexes is far slower, and the partial unique index aborts the COPY midway.
-`VACUUM (ANALYZE)` runs last inside the seeder; without it the planner picks Seq Scan.
+> ⚠️ **Important Note on Driver Pings (TTL Expiration):**  
+> `DriverPings` uses a 2-hour TTL index per spec. If driver map markers expire during testing or before a demo, refresh pings with:
+> ```bash
+> python3 data_generation/mongo_seeder.py --pings-only
+> ```
 
-**Why `mongo/01_collections_and_indexes.js` and `mongo_seeder.py` both create collections
-and indexes.** `01` is the declarative setup script: it applies the `$jsonSchema` validators,
-builds the 2dsphere and TTL indexes, and asserts all four before exiting. The seeder repeats
-that work so it is self-contained and safe to re-run alone — which matters because the 2-hour
-TTL drains `DriverPings` continuously, so it must be re-run before any demo. Neither holds a
-second copy of a definition: **both read `docs/mongo_schema_map.json`**, the single source of
-truth for every validator and index. `01` alone gives an empty, correctly-indexed database;
-the seeder alone gives the same schema plus data.
+---
 
-## 4. Assumptions
-
-1. **BIGINT IDENTITY keys, not UUID.** The brief allows either. Random UUIDv4 destroys B-tree insert locality and widens every FK from 8 to 16 bytes.
-2. **`NUMERIC(10,2)` for money, `DOUBLE PRECISION` for coordinates.** Exact decimal for a ledger; geographic precision for lat/lon.
-3. **The brief says the order INSERT "triggers the audit log". It does not** — `trg_wallet_audit` is an `AFTER UPDATE` trigger on `users`, so the wallet debit fires it. Implemented as written in the spec's intent.
-4. **One active order per user is a hard rule**, enforced by a partial unique index, not by application code.
-5. **`total_amount` is pre-computed.** No line-item table; the assignment does not require one.
-6. **No cross-database foreign key exists.** Mongo documents carry PostgreSQL ids as opaque copies; `mongo_seeder.py` reads them out of PostgreSQL at load time, which is the only thing keeping them consistent.
-7. **Telemetry is intentionally lossy.** The 2-hour TTL on `DriverPings` means the collection drains continuously. Re-run `mongo_seeder.py` before any demo.
-8. **`docs/mongo_schema_map.json` is executable, not documentation.** Both `mongo/01_collections_and_indexes.js` and `mongo_seeder.py` read it at runtime.
-9. Single currency (INR). Seeded data is synthetic (`Faker`, seed 42) and reproducible.
-
-## 5. Dataset
-
-| Relation | Rows | | Collection | Documents |
-|---|---:|---|---|---:|
-| `orders` | 300,211 | | `Menus` | 1,000 |
-| `wallet_audit_logs` | 150,211 | | `Reviews` | 200,000 |
-| `users` | 50,000 | | `DriverPings` | 520,000 |
-| `restaurants` | 1,000 | | | |
-
-Brief requires 100,000+ ledger entries, 50,000+ orders, 500,000+ pings. All cleared.
-**Every ledger row was written by the trigger** — three set-based `UPDATE` statements, one row-trigger firing per affected row. `COPY` fires INSERT triggers only, so it could not have produced them.
-
-## 6. Performance proof
-
-Raw logs: `performance/postgres_explain_analyzes.txt`, `performance/mongo_execution_stats.json`
-
-| Query | Without index | With index | Gain |
-|---|---|---|---|
-| **WF2** 90-day revenue scan | Seq Scan, 91.201 ms | Index Only Scan, **29.250 ms** | 3.1× |
-| **Materialized view** leaderboard | Seq Scan on 294,015 orders, 89.653 ms | Index Scan, **0.034 ms** | 2,600× |
-| **Partial unique index** lookup | — | Index Scan, **0.011 ms** | — |
-| **WF3** `$geoNear` 5 km | COLLSCAN, 520,000 docs, 244 ms | GEO_NEAR_2DSPHERE, **44,618 docs**, 91 ms | 11.7× fewer docs |
-| **WF4** — the `$match` feeding `$facet` | COLLSCAN, 200,000 docs, 49 ms | IXSCAN, **220 docs**, 1 ms | 909× fewer docs |
-
-### Workflow 2 — Index Only Scan with an Index Cond
-
+### Step 5: Launch API & Frontend Application
+```bash
+cd api
+npm install
+npm start          # Or: npm run dev (for auto-restart mode)
 ```
-->  Index Only Scan using idx_orders_delivered_date_rest on public.orders o
-      (cost=0.43..1526.35 rows=54081 width=18) (actual time=0.022..7.383 rows=49179 loops=1)
-      Index Cond: ((o.created_at >= (CURRENT_DATE - '90 days'::interval))
-               AND (o.created_at <  (CURRENT_DATE + '1 day'::interval)))
-      Heap Fetches: 525
-Execution Time: 29.250 ms
-```
+* **Web Application:** Access at [http://localhost:5000](http://localhost:5000)
+* **API Health Check:** Access at [http://localhost:5000/api/health](http://localhost:5000/api/health)
 
-Control, index paths disabled with `enable_indexscan=off`:
+---
 
-```
-->  Seq Scan on orders o  (actual time=0.006..66.167 rows=49179 loops=1)
-Execution Time: 91.201 ms
-```
+## 7. Application Screens & Features
 
-### Workflow 3 — `GEO_NEAR_2DSPHERE`, no `COLLSCAN`
+| Screen | Functionality & Features | Underlying Backend Logic / Endpoints |
+| :--- | :--- | :--- |
+| **Overview** | System-wide dashboard metrics (users, restaurants, total orders, revenue) and quick actions. | `/api/analytics/summary`, Browse endpoints |
+| **Browse** | Server-side paginated tables for users, restaurants, and orders. Features live search, status filtering, and nested flexible menu documents. | `/api/users`, `/api/restaurants`, `/api/orders`, `/api/mongo/menus/:id` |
+| **Checkout** *(Workflow 1)* | Order checkout modal with wallet debit logic. Displays pre/post balance, trigger-generated audit log, and error handling for active orders or insufficient funds. | `CALL sp_execute_checkout(...)` |
+| **Wallet Audit** | Read-only financial ledger per user with date-range filters and calculated running balances. | `/api/users/:id/audit` |
+| **Analytics** *(Workflow 2)* | Interactive 7-day revenue moving average chart (top 5 restaurants), `DENSE_RANK()` leaderboard, and on-demand materialized view refresh button. | Window queries, `mv_restaurant_performance`, `sp_refresh_restaurant_performance()` |
+| **Live Driver Map** *(Workflow 3)* | Leaflet map displaying active drivers within a selectable radius (default 5 km) with distance sorting and ETA. Polls every 10s. | `$geoNear` aggregation pipeline |
+| **Reviews** *(Workflow 4)* | Rating distributions, top 10 tag clouds, average sentiment breakdown, and monthly review trends. | `$facet` aggregation pipeline |
 
-```
-stage: GEO_NEAR_2DSPHERE   indexName: ix_pings_geo
-totalDocsExamined: 44,618   of 520,000      executionTimeMillis: 91
-```
+---
 
-`$geoNear` cannot run at all without the index — MongoDB rejects the pipeline:
-`"$geoNear requires a 2d or 2dsphere index, but none were found"`.
+### Demo Helpers & Features
+* **Actor Switcher:** Dropdown in top navigation bar allowing switching between active users (persisted in `localStorage`).
+* **Order Status Pipeline:** Advance order states (`PREPARING` → `DELIVERING` → `DELIVERED`) via `sp_advance_order_status`. Demonstrates partial unique index enforcement (blocks concurrent active orders).
 
-### Workflow 4 — the `$match` before `$facet` uses the index
+---
 
-```
-$match before $facet   IXSCAN ix_reviews_restaurant_recent      220 docs      1 ms
-$match inside $facet   COLLSCAN                             200,000 docs    230 ms
-```
+### Recommended 5-Minute Demo Script
+1. **Overview → Browse:** Search for "delhi", inspect restaurant details and flexible menu items.
+2. **Checkout Workflow:** Select user with valid balance → execute checkout → view updated balance & generated audit entry.
+3. **Active Order Enforcement:** Attempt a second checkout for same user → observe system lock due to active order.
+4. **Order State Advance:** Advance active order status to `DELIVERED` → perform checkout again to confirm success.
+5. **Validation Error Test:** Attempt checkout exceeding wallet balance → confirm insufficient funds warning.
+6. **Wallet Audit:** Filter audit log by date range.
+7. **Analytics:** Review 7-day moving average chart, inspect rankings, and trigger materialized view refresh.
+8. **Live Driver Map:** Choose restaurant, adjust search radius, inspect real-time driver ETAs.
+9. **Reviews:** Explore tag aggregations and sentiment analytics charts.
 
-`$facet` itself never uses an index — the `IXSCAN` above belongs to the `$match` that feeds
-it. Its sub-pipelines cannot use indexes at all; only the stage immediately before `$facet`
-can. Moving the filter one stage inwards costs **909× the documents examined**.
+---
 
-## 7. Repository contents
+## 8. API Endpoint Reference
 
-```
-README.md
-docs/    relational_erd.png          generated from the live schema (eralchemy2 + Graphviz)
-         mongo_schema_map.json       validators + index specs, read at runtime by mongo/01 and the seeder
-sql/     01_schema_ddl.sql           4 tables, 12 CHECK constraints
-         02_indexes.sql              6 indexes: 1 partial UNIQUE, 2 partial covering, 3 secondary
-         03_triggers_and_audit.sql   audit trigger + 2 immutability guards; self-tests on load
-         04_stored_procedures.sql    Workflow 1 — sp_execute_checkout, REPEATABLE READ
-         05_materialized_views.sql   MV + REFRESH CONCURRENTLY as both FUNCTION and PROCEDURE
-         06_window_analytics.sql     Workflow 2 — CTEs, RANGE frames, DENSE_RANK
-mongo/   01_collections_and_indexes.js   collections, validators, 2dsphere, TTL 7200s
-         02_workflow3_geonear.js         Workflow 3
-         03_workflow4_facet.js           Workflow 4
-data_generation/  postgres_seeder.py  mongo_seeder.py  requirements.txt
-performance/      postgres_explain_analyzes.txt  mongo_execution_stats.json
-```
+*(Complete reference available in [`docs/api_endpoints.md`](docs/api_endpoints.md))*
 
-## 8. Verification
+| Method | Endpoint Path | Description / Operation |
+| :-: | :--- | :--- |
+| `GET` | `/api/users`, `/api/users/:id` | Paginated user list & detailed user profiles |
+| `GET` | `/api/restaurants`, `/api/restaurants/:id` | Paginated restaurant list & detail views |
+| `GET` | `/api/orders`, `/api/orders/:id` | Paginated order history with search & status filters |
+| `POST` | `/api/checkout` | Executes checkout transaction (`sp_execute_checkout`) |
+| `POST` | `/api/orders/:id/advance` | Advances order lifecycle status (`sp_advance_order_status`) |
+| `GET` | `/api/users/:id/audit` | Retrieves user wallet audit trail with date range filters |
+| `GET` | `/api/analytics/revenue` | Fetches 7-day moving average revenue data |
+| `GET` | `/api/analytics/rankings` | Fetches `DENSE_RANK()` restaurant performance leaderboard |
+| `GET` | `/api/analytics/summary` | Retrieves materialized view performance snapshot |
+| `POST` | `/api/analytics/summary/refresh` | Triggers materialized view refresh procedure |
+| `GET` | `/api/mongo/nearby` | Performs `$geoNear` query for drivers within radius |
+| `GET` | `/api/mongo/reviews` | Executes `$facet` pipeline for aggregated review analytics |
+| `GET` | `/api/mongo/menus/:restaurantId` | Retrieves nested MongoDB flexible menu document |
+| `GET` | `/api/health` | Health check endpoint |
 
-The scripts assert their own correctness and fail loudly:
+---
 
-| Run | Asserts |
-|---|---|
-| `sql/03_triggers_and_audit.sql` | CREDIT/DEBIT logged correctly, no-op write logs nothing, ledger `UPDATE` rejected. Prints `self-test passed`. |
-| `data_generation/postgres_seeder.py` | `users with >1 active order (must be 0): 0` |
-| `mongo/01_collections_and_indexes.js` | 2dsphere present, TTL exactly 7200 s and single-field, 3 validators |
-| `mongo/02` and `mongo/03` | throw unless `GEO_NEAR_2DSPHERE` / `IXSCAN` present and `COLLSCAN` absent |
+## 9. Handover Notes from Assignment 1
 
-Workflow 1 outcomes, by hand:
+* The inherited database schema, stored procedures, python seeders, and MongoDB aggregation pipelines operate without modification.
+* Verified that checkout procedures, window functions, materialized view refreshes, `$geoNear` (leveraging `ix_pings_geo` `2dsphere`), and `$facet` (leveraging `ix_reviews_restaurant_recent`) execute with optimal query execution plans (no `COLLSCAN`).
+* Added `api/`, `web/`, and `docs/design/` layers to satisfy Assignment 2 requirements while leaving base database scripts intact.
 
-```
-OK · ACTIVE_ORDER_EXISTS (23505) · INSUFFICIENT_FUNDS (23514)
-AMOUNT_INVALID (22023) · BAD_REFERENCE (23503) · USER_NOT_FOUND
-```
+---
 
-After the four failures the wallet balance and ledger row count are **unchanged** — atomicity.
-`CALL` must run in autocommit; nested inside `BEGIN` it raises `2D000`.
+## 10. System Assumptions
 
-## 9. Known limitations
+1. **User Persona Model:** Customer actors represent BiteStream users; switching actors mimics session login.
+2. **Geospatial Reference Point:** Map searches originate relative to a selected restaurant (default 5 km radius).
+3. **Active Order Lifecycle:** An active order is in state `PREPARING` or `DELIVERING`. `DELIVERED` marks terminal completion.
+4. **Driver Ping Expiration:** Ping data uses a 2-hour TTL index; re-seeding is required prior to testing/demonstration.
+5. **Chart Presentation:** The revenue chart focuses on the top 5 performing restaurants for readability.
+6. **Review Window:** Aggregations analyze a 540-day historical window matching the seeded dataset.
+7. **Currency Standard:** Financial values are rendered in Indian Rupees (₹ / INR).
+8. **Real-time Polling:** Driver map updates every 10 seconds via background polling.
 
-- MV is refreshed manually; production would use `pg_cron` on a staleness budget.
-- No cross-database referential integrity; divergence needs a reconciliation job.
-- At 100× scale: partition `orders` by month, shard `DriverPings` on `driver_id`, replace the full MV refresh with incremental rollups.
+---
+
+## 11. Known Limitations & Roadmap
+
+* **Automated Unit/Integration Tests:** Test coverage for key workflows (e.g., checkout success/failure cases) 
+* **Containerization:** Setup is currently manual; a `docker-compose.yml` environment can be added for automated orchestration.
+* **Refresh Timestamping:** The Analytics summary displays `MAX(last_order_at)` from the materialized view rather than the exact execution time of `sp_refresh_restaurant_performance()`.
+* **CDN Dependencies:** Front-end charts (Chart.js) and mapping (Leaflet) require internet connectivity to load assets from CDNs.
+* **Mobile Responsiveness:** Base responsive styles are implemented with room for further mobile layout enhancements.
