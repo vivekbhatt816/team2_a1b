@@ -31,11 +31,8 @@
 | Team Member | Design Contributions | Code Contributions | Verification / Integration |
 | :--- | :--- | :--- | :--- |
 | **Thejas Gowda** | Designed UI wireframes for screen layouts; contributed to interaction decisions. | Implemented backend integration and specific API feature routes. | Tested core workflows and resolved integration issues. |
-
 | **Charmin Parmar** | Reviewed and refined wireframes; contributed to UI layout & responsive design. | Implemented `api/server.js` and integrated API endpoints with frontend. | Verified API responses, error handling, and application startup. |
-
 | **SreeLasya Muvva** | Created wireframes for all 7 screens & UI preview; designed navigation layout. | Contributed `api/routes/audit.js`, `analytics.js`, `browse.js`, and `transactions.js`. | Checked route files and documented inherited system & design decisions. |
-
 | **Vivek Bhatt** | Contributed to screen design, visual consistency, and UI workflow review. | Implemented frontend in `web/app.js`, `web/index.html`, and `web/styles.css`. | Tested UI workflows, captured screenshots, and verified final integration. |
 
 #### Shared Responsibilities
