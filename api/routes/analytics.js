@@ -3,40 +3,118 @@ import { query } from "../db/postgres.js";
 
 const router = Router();
 
+// 1. Seven-day moving-average revenue
 router.get("/revenue", async (req, res, next) => {
   try {
-    const r = await query(`
+    const restaurantId = req.query.restaurant_id;
+
+    // No restaurant_id or restaurant_id=all means return all restaurants.
+    let selectedRestaurantId = null;
+
+    if (
+      restaurantId !== undefined &&
+      restaurantId !== "" &&
+      restaurantId !== "all"
+    ) {
+      selectedRestaurantId = Number(restaurantId);
+
+      if (
+        !Number.isSafeInteger(selectedRestaurantId) ||
+        selectedRestaurantId <= 0
+      ) {
+        return res.status(400).json({
+          error: "restaurant_id must be a positive integer or 'all'."
+        });
+      }
+    }
+
+    const r = await query(
+      `
       WITH daily AS (
-        SELECT o.restaurant_id, o.created_at::date AS d, SUM(o.total_amount) AS revenue, COUNT(*) AS order_count
+        SELECT
+          o.restaurant_id,
+          o.created_at::date AS d,
+          SUM(o.total_amount) AS revenue,
+          COUNT(*) AS order_count
         FROM orders o
-        WHERE o.status='DELIVERED'
+        WHERE o.status = 'DELIVERED'
           AND o.created_at >= CURRENT_DATE - INTERVAL '90 days'
           AND o.created_at < CURRENT_DATE + INTERVAL '1 day'
         GROUP BY o.restaurant_id, o.created_at::date
       ),
-      top5 AS (
-        SELECT restaurant_id FROM daily GROUP BY restaurant_id ORDER BY SUM(revenue) DESC LIMIT 5
-      ),
+
+      -- Generate a complete daily calendar for every restaurant.
       calendar AS (
-        SELECT t.restaurant_id, gs::date AS d
-        FROM top5 t CROSS JOIN LATERAL generate_series(CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE, INTERVAL '1 day') gs
+        SELECT
+          rest.id AS restaurant_id,
+          gs::date AS d
+        FROM restaurants rest
+        CROSS JOIN LATERAL generate_series(
+          CURRENT_DATE - INTERVAL '90 days',
+          CURRENT_DATE,
+          INTERVAL '1 day'
+        ) AS gs
       ),
+
+      -- Fill dates with no delivered orders with zero revenue.
       filled AS (
-        SELECT c.restaurant_id,c.d,COALESCE(d.revenue,0) AS revenue
-        FROM calendar c LEFT JOIN daily d ON d.restaurant_id=c.restaurant_id AND d.d=c.d
+        SELECT
+          c.restaurant_id,
+          c.d,
+          COALESCE(d.revenue, 0) AS revenue,
+          COALESCE(d.order_count, 0) AS order_count
+        FROM calendar c
+        LEFT JOIN daily d
+          ON d.restaurant_id = c.restaurant_id
+         AND d.d = c.d
+      ),
+
+      -- Calculate moving averages across the complete date series.
+      windowed AS (
+        SELECT
+          f.restaurant_id,
+          f.d,
+          f.revenue,
+          f.order_count,
+
+          AVG(f.revenue) OVER (
+            PARTITION BY f.restaurant_id
+            ORDER BY f.d
+            RANGE BETWEEN INTERVAL '6 days' PRECEDING AND CURRENT ROW
+          ) AS ma7_revenue
+
+        FROM filled f
       )
-      SELECT f.d AS business_date, f.restaurant_id, r.name AS restaurant, r.city,
-             ROUND(f.revenue::numeric,2) AS revenue_today,
-             ROUND(AVG(f.revenue) OVER (
-               PARTITION BY f.restaurant_id ORDER BY f.d
-               RANGE BETWEEN INTERVAL '6 days' PRECEDING AND CURRENT ROW
-             )::numeric,2) AS ma7_revenue
-      FROM filled f JOIN restaurants r ON r.id=f.restaurant_id
-      WHERE f.d >= CURRENT_DATE - 14
-      ORDER BY f.d, r.name
-    `);
-    res.json({ data: r.rows });
-  } catch (e) { next(e); }
+
+      SELECT
+        w.d AS business_date,
+        w.restaurant_id,
+        rest.name AS restaurant,
+        rest.city,
+        ROUND(w.revenue::numeric, 2) AS revenue_today,
+        ROUND(w.ma7_revenue::numeric, 2) AS ma7_revenue
+
+      FROM windowed w
+      JOIN restaurants rest
+        ON rest.id = w.restaurant_id
+
+      -- Filter after calculating the moving average.
+      WHERE (
+        $1::int IS NULL
+        OR w.restaurant_id = $1::int
+      )
+
+      ORDER BY w.d, rest.name
+      `,
+      [selectedRestaurantId]
+    );
+
+    res.json({
+      data: r.rows
+    });
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.get("/rankings", async (req, res, next) => {
